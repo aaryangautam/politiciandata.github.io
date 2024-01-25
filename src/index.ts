@@ -2,161 +2,155 @@ import * as Plot from "@observablehq/plot";
 import * as d3 from 'd3';
 //import {addTooltips} from "@mkfreeman/plot-tooltip"
 
-interface Player {
-  name: string;
-  team: string;
-  usg_pct: number;
-  ts_pct: number;
-  playoff_mp: number;
-  playoff_usg_pct: number;
-  playoff_ts_pct: number;
-  playoff_mpg: number;
+
+interface Investment {
+  disclosure_year: string;
+  disclosure_date: string;
+  transaction_date: string;
+  owner: string;
+  ticker: string;
+  asset_description: string;
+  type: string;
+  amount: string;
+  representative: string;
+  district: string;
+  state: string;
+  ptr_link: string;
+  cap_gains_over_200_usd: string;
+  industry: string;
+  sector: string;
+  party: string;
+
 }
 
-interface Games {
-  id: string;
-  rated: string;
-  created_at: string;
-  last_move_at: string;
-  turns: string;
-  victory_status: string;
-  winner: string;
-  increment_code: string;
-  white_id: string;
-  white_rating: string;
-  black_id: string;
-  black_rating: string;
-  moves: string;
-  opening_eco: string;
-  opening_name: string;
-  opening_ply: string;
+
+
+function getPartyFrequency(data: Investment[]): { party: string; count: number }[] {
+  const partyCounts = d3.rollup(
+    data,
+    v => v.length,
+    d => d.party
+  );
+
+  const partyData = Array.from(partyCounts, ([party, count]) => ({ party, count }));
+
+  return partyData;
 }
 
-function getTopFieldValues(data: Games[], field: keyof Games, topCount: number): {
-  [x: string]: string | number;
-  count: number;
-}[] {
-  const fieldCounts: Record<string, number> = {};
+function getPartysectorData(data: Investment[]): { party: string; sector: string; count: number }[] {
+  const partysectorCounts = d3.rollup(
+    data,
+    v => v.length,
+    d => [d.party, d.sector]
+  );
 
-  // Count occurrences of the specified field
-  data.forEach((item) => {
-    const fieldValue = item[field];
-    fieldCounts[fieldValue] = (fieldCounts[fieldValue] || 0) + 1;
-  });
+  const partysectorData = Array.from(partysectorCounts, ([[party, sector], count]) => ({ party, sector, count }));
 
-  // Convert the counts into an array of objects
-  const fieldCountArray = Object.entries(fieldCounts).map(([value, count]) => ({ [field]: value, count }));
-
-  // Sort the array by count in descending order
-  fieldCountArray.sort((a, b) => b.count - a.count);
-
-  // Take the top N field values
-  const topFieldValues = fieldCountArray.slice(0, topCount);
-
-  return topFieldValues;
+  return partysectorData;
 }
+
 
 async function main(): Promise<void> {
-  const chess: Array<Games> = await d3.csv("data/Lichess.csv");
-  //const data = (await res.json()) as Array<Player>;
+  const investments: Array<Investment> = await d3.csv("data/investments.csv");
 
-  const filteredData = getTopFieldValues(chess, "opening_name", 20)
+  const partyFrequency = getPartyFrequency(investments);
 
-  const sideways = Plot.plot({
-    title: "Top 20 Most Popular Chess Openings",
+  const barChart = Plot.plot({
+    title: "Investment Volume by Party",
+    color: {  domain: ["Democrat", "Republican"], range: ["blue", "red"] , legend: true },
     height: 240,
-    x: {
-      label: "Name of Openings",
-    },
     y: {
-      label: "Games Used",
+      label: "Party",
     },
-    //color: {legend: true},
-    // y: {
-    //   domain: d3.sort(filteredData, d => -d.count).map(d => d.opening_name)
-    // },
-    marginLeft: 250,
+    x: {
+      label: "# of Investments",
+    },
+    marginLeft: 100,
     marks: [
-      Plot.barX(filteredData, {
-        x: "count" , y: "opening_name", fill: "opening_name", tip: true, sort: {y: "-x"}}),
+      Plot.barX(partyFrequency, {
+        x: "count",
+        y: "party",
+        fill: "party",
+        tip: true,
+        sort: { x: "-y" },
+      }),
       Plot.ruleX([0]),
-      //Plot.axisLeft(yScale).tickSize(0)
-    ]
-  })
-  
-  document.querySelector("#plot")?.append(sideways);
-
-
-  const barchart = Plot.plot({
-    title: "Openings Sequences Length",
-    marginTop: 100,
-    width: 640,
-    grid: true,
-    x: {
-      label: "# of moves",
-    },
-    y: {
-      label: "frequency",
-    },
-    marks: [
-      Plot.barY(chess, Plot.groupX({
-        y: "count"} , //title: (elems: string | any[]) => `${elems.length} games` }, 
-        {x: d => Number(d.opening_ply), tip: true})),
-      Plot.tip(
-        [`Most opening sequences are 3 moves in duration.`],
-        {x: 3, y: 3490, dy: 3, anchor: "bottom"}
-      ),
-      Plot.ruleY([0]),
     ],
   });
-  
-  document.querySelector("#plot")?.append(barchart);
 
-  // const chess: Array<Games> = await d3.csv("data/Lichess.csv");
+  document.querySelector("#investmentFreq")?.append(barChart);
 
-  const differences = chess.map(d => ({
-    difference: Math.abs(Number(d.white_rating) - Number(d.black_rating)),
-    winner: d.winner,
-    underdog: ((d.winner === "white" && d.white_rating < d.black_rating) ||  (d.winner === "black" && d.white_rating > d.black_rating)) ? "underdog" : d.victory_status === "draw" ? "draw" : "favorite",
-    victory_status: d.victory_status,
-    opening_name: d.opening_name
-  }));
+  const partysectorData = getPartysectorData(investments);
 
-  
-  const scatter = Plot.plot({
-    title: "Games Outcomes and Difference in Ratings",
-    marginLeft: 60,
-    color: {legend: true},
+
+  const sectorParty = Plot.plot({
+    title: "Transactions within Sectors",
+    label: null,
     x: {
-      inset: 10,
-      label: "Rating Differential",
+      axis: "top",
+      label: "Number of Transactions in Different Sectors",
+      labelAnchor: "center",
+      percent: true
     },
-    y: {
-      label: null,
+    color: {
+      scheme: "PiYG",
+      type: "ordinal"
     },
+    marginLeft: 150,
     marks: [
-      Plot.dot(differences, {
-        x: "difference", 
-        y: "underdog", 
-        stroke: "difference",
-        // title: (d) =>
-        //   `${d.winner} \n Game Status: ${d.victory_status} \n Opening Play: ${d.opening_name}` // \n makes a new line
+      Plot.barX(partysectorData, {
+        x: "count",
+        y: "sector",
+        fill: (d) => d.value > 0,
+        sort: { y: "-x" }
       }),
-      Plot.tip(
-        differences,
-        Plot.pointer({
-          x: "difference",
-          y: "underdog",
-          title: (d) =>
-            `${d.winner} \n Game Status: ${d.victory_status} \n Opening Play: ${d.opening_name}` // \n makes a new line,
-        }),
-      )
-      
-    ],
-    
-  })
+      Plot.ruleX([0])
+    ]
+  });
+  
 
-  document.querySelector("#plot")?.append(scatter);
+
+  document.querySelector("#sectorParty")?.append(sectorParty);
+
+
+
+  const dateData = investments.map(d => {
+    const dateObject = new Date(d.transaction_date);
+    return { ...d, month: dateObject.getUTCMonth() + 1 };
+  });
+
+  
+
+
+  function getMonthFromDate(dateString: string) {
+    const dateObject = new Date(dateString);
+    return dateObject.getUTCMonth() + 1;
+  }
+  
+  function getMonthSectorCount(data: Investment[]) {
+    const monthSectorCounts = d3.rollup(
+      data,
+      v => v.length,
+      d => [getMonthFromDate(d.transaction_date), d.sector]
+    );
+  
+    const monthSectorData = Array.from(monthSectorCounts, ([[month, sector], count]) => ({ month, sector, count }));
+  
+    return monthSectorData;
+  }
+  
+  const monthSectorCounts = getMonthSectorCount(investments);
+  console.log(monthSectorCounts);
+
+
+
+  
+  const heatMap = Plot.auto(monthSectorCounts, {x: "month", y: "sector", color:"count"}).plot({color: {legend:true},marginLeft: 150})
+  
+
+  
+  document.querySelector("#heat")?.append(heatMap);
+
 }
 
 window.addEventListener("DOMContentLoaded", async (_evt) => {
