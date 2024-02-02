@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  width: 640px;
+  margin: 40px auto 0 auto;
+}
+</style>
+    <title>Project 1: Politician Investments</title>
+  <body>
+    <h1>Analyzing Politicians' Relationships in Sector Investment </h1>
+    <p>The relationship between politicians and investments is an interesting one to explore, considering that they are often in the know for legislation that is going to hit the 
+      country. Analyzing these results may provide some insight into what resources to invest in and when. <b>My hypothesis is that poiliticians have strong investments in the technology, energy, and finance sectors.</b>
+    </p>
+    <p>  
+      The source for this comes from <a href="https://disclosures-clerk.house.gov/">Disclosure Clerk of the House of Representatives</a>. Politicians are required to disclose their investment information, and this data set contains all disclosed investment information from 2020-today. 
+      I accessed this through <a href="https://housestockwatcher.com/">House Stock Watcher</a>, a website that stores, monitors, and transcribes the information from the governmental employees in order to keep the American people informed of the government's investments.
+      Notes on data scrubbing: 
+      I removed all data with no Tickers, without an asset description, without an industry, and those not in a sector.
+    </p>
+    <p> I first decided to look at the party distribution of disclosed investments. From there, I could infer whether I was on the right track or not. 
+    </p>
+    <div id="investmentFreq">
+    </div>
+    <p> By looking at the suprisingly higher volume of democratic investment, I believed that technology and real estate may be higher on the list than anticipated. This is because democrats usually live in urban areas, allowing for a closer interaction with more of these sectors.
+    </p>
+    <div id="sectorParty">
+    </div>
+    <p>The technology sector lived up to the expectation. Finance was also decently in the running. The energy sector was a lot lower than previously anticipated, considering that the government plays a major role in that sector. </p>
+    <h2>Monthly Sector Investment Frequency </h2>
+    <div id="heat">
+    </div>
+    <p>Finally, this analysis shows the ideal times to invest in different sectors. While there were certain sectors that vastly outperformed others, most sectors have fluctuations in volume. Typically, investing when there is a large volume of trades is a good time to invest.
+      This chart can possibly serve as a helpful metric for when to invest money in the marketplace. 
+    </p>
+    <script src="index.js"></script>
+  </body>
+</html>
